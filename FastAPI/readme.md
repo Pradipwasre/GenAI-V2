@@ -136,16 +136,16 @@
 
 
 
---- hello_server.py----
+-- hello_server.py----
 
-# File: /Users/pradipwasre/Desktop/GenAI-V2/FastAPI/01_hello_server.py
+### File: /Users/pradipwasre/Desktop/GenAI-V2/FastAPI/01_hello_server.py
 
 from fastapi import FastAPI
 
-# Create FastAPI app instance
+### Create FastAPI app instance
 app = FastAPI()
 
-# Define a simple GET endpoint
+### Define a simple GET endpoint
 @app.get("/")
 def read_root():
     return {"message": "Hello, FastAPI is working!"}
@@ -155,7 +155,7 @@ def read_root():
 
 # Notes on hello_server.py
 
-## What This Code Does
+### What This Code Does
 - Imports **FastAPI** framework.
 - Creates an **app instance** (`app = FastAPI()`), which is the central object managing all API routes.
 - Defines a simple **GET endpoint** at `/` (root URL).
@@ -166,25 +166,25 @@ def read_root():
 
 --
 ===================
-# -------------------------------
-# Step 1: Install FastAPI + Uvicorn (globally, without venv)
-# -------------------------------
+###-------------------------------
+##### Step 1: Install FastAPI + Uvicorn (globally, without venv)
+### -------------------------------
 
-# On macOS / Linux
+### On macOS / Linux
 python3 -m pip install fastapi uvicorn
 
-# On Windows (PowerShell or CMD)
+### On Windows (PowerShell or CMD)
 python -m pip install fastapi uvicorn
 
 
-# -------------------------------
-# Step 2: Navigate to your project folder
-# -------------------------------
+### -------------------------------
+#### Step 2: Navigate to your project folder
+### -------------------------------
 
-# On macOS / Linux
+### On macOS / Linux
 cd /Users/pradipwasre/Desktop/GenAI-V2/FastAPI
 
-# On Windows (PowerShell)
+#### On Windows (PowerShell)
 cd C:\Users\pradipwasre\Desktop\GenAI-V2\FastAPI
 
 
@@ -201,6 +201,9 @@ uvicorn 01_hello_server:app --reload
 # Open http://127.0.0.1:8000 → should show {"message": "Hello, FastAPI is working!"}
 # Open http://127.0.0.1:8000/docs → auto-generated Swagger UI
 ==========================
+
+
+
 
 
 
