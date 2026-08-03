@@ -133,3 +133,74 @@
 - Pydantic: validates data types and structure
 - HTTPException: returns proper error codes and messages
 - File upload: enables bulk predictions from a CSV file
+
+
+
+--- hello_server.py----
+
+# File: /Users/pradipwasre/Desktop/GenAI-V2/FastAPI/01_hello_server.py
+
+from fastapi import FastAPI
+
+# Create FastAPI app instance
+app = FastAPI()
+
+# Define a simple GET endpoint
+@app.get("/")
+def read_root():
+    return {"message": "Hello, FastAPI is working!"}
+
+
+--
+
+# Notes on hello_server.py
+
+## What This Code Does
+- Imports **FastAPI** framework.
+- Creates an **app instance** (`app = FastAPI()`), which is the central object managing all API routes.
+- Defines a simple **GET endpoint** at `/` (root URL).
+- When a client visits `http://127.0.0.1:8000/`, FastAPI runs the function `read_root()` and returns a JSON response:
+  ```json
+  {"message": "Hello, FastAPI is working!"}
+
+
+--
+===================
+# -------------------------------
+# Step 1: Install FastAPI + Uvicorn (globally, without venv)
+# -------------------------------
+
+# On macOS / Linux
+python3 -m pip install fastapi uvicorn
+
+# On Windows (PowerShell or CMD)
+python -m pip install fastapi uvicorn
+
+
+# -------------------------------
+# Step 2: Navigate to your project folder
+# -------------------------------
+
+# On macOS / Linux
+cd /Users/pradipwasre/Desktop/GenAI-V2/FastAPI
+
+# On Windows (PowerShell)
+cd C:\Users\pradipwasre\Desktop\GenAI-V2\FastAPI
+
+
+# -------------------------------
+# Step 3: Run the FastAPI server
+# -------------------------------
+
+# Run the hello_server.py file with uvicorn
+uvicorn 01_hello_server:app --reload
+
+# -------------------------------
+# Step 4: Test in Browser
+# -------------------------------
+# Open http://127.0.0.1:8000 → should show {"message": "Hello, FastAPI is working!"}
+# Open http://127.0.0.1:8000/docs → auto-generated Swagger UI
+==========================
+
+
+
