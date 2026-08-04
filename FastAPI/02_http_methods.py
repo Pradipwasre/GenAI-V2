@@ -41,18 +41,40 @@ def create(item : dict):
 
 # ---------------- PUT Endpoint ----------------
 # Example: Update existing profile
-class UpdateProfile(BaseModel):
-    username: str
-    email: str
-    age: int
+class Item(BaseModel):
+    name : str
+    price : float
 
-@app.put("/profile")
-def update_profile(profile: UpdateProfile):
-    return {
-        "status": "updated",
-        "updated_profile": {
-            "username": profile.username,
-            "email": profile.email,
-            "age": profile.age
-        }
-    }
+@app.put("/items/{item_id}")
+def update_item(item_id : int , item:Item):
+    return {"Item_id" : item_id , "updated_date" : item}
+
+@app.delete("/items/{item_id}")
+def delete_item(item_id : int):
+    return {"message" : f"Item {item_id} deleted successfully!"}    
+
+@app.get("/student/{student_id}")
+def get_student(student_id : int):
+    return {"student_id": student_id, "Message" : f"Details for student {student_id}"}
+
+
+# just try
+students_df = {}
+
+class Student(BaseModel):
+    name : str
+    class_name : str
+
+# Add student
+@app.post("students/{student_id}")
+def add_student(student_id : int , student:Student):
+    students_db[student_id] = student
+    return {"Message": f"student {student_id} added" , "student" : student}
+
+# get a student
+@app.get("student/{student_id}")
+def get_student(student_id : int):
+    student = students_df.get(student_id)
+    if Student:
+        return {"StudentID" : student_id , "Student" : student}
+    return {"error" : f"Student {student_id} not found"}
