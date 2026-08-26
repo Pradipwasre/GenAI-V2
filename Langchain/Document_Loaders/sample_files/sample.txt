@@ -1,0 +1,22 @@
+LangChain Document Loaders - Class Notes
+
+Welcome to the RAG Series - Class 2!
+
+In this session, we will learn how to load documents from various sources
+using LangChain's powerful Document Loader ecosystem.
+
+Key Topics Covered:
+1. Text Loaders
+2. PDF Loaders  
+3. CSV Loaders
+4. Web Base Loaders
+5. Directory Loaders
+
+Document Loaders are the first step in any RAG pipeline.
+They convert heterogeneous data sources into a standardized Document format.
+
+Each Document object contains:
+- page_content: The actual text data
+- metadata: Source information like file path, page number, etc.
+
+Happy Learning!
