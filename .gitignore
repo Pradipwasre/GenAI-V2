@@ -1,0 +1,31 @@
+# Ignore environment files
+.env
+*.env
+
+# Ignore API keys or secret files
+apikeys.txt
+*.key
+*.pem
+
+# Ignore large files (example: >100MB datasets, models)
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.iso
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore VS Code settings
+.vscode/
