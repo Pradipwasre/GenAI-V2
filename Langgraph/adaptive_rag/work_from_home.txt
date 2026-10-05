@@ -1,0 +1,29 @@
+WORK FROM HOME POLICY (2026 Edition)
+
+1. Eligibility
+- All employees who have completed their probation period (3 months) are eligible for hybrid work.
+- Fully remote arrangements require Director-level approval and a signed remote work agreement.
+
+2. Hybrid Schedule
+- Standard hybrid schedule: 3 days in office, 2 days remote per week.
+- Core collaboration hours are 10:00 AM to 3:00 PM local time on remote days.
+- Remote days may be changed with 24 hours notice to the team lead.
+
+3. Equipment & Stipend
+- The company provides a laptop, monitor, keyboard, and mouse.
+- A one-time home-office setup stipend of $500 is available.
+- A monthly internet stipend of $40 is reimbursed against receipts.
+- Equipment remains company property and must be returned upon exit.
+
+4. Security Requirements
+- Employees must use the company VPN at all times when handling company data remotely.
+- Two-factor authentication is mandatory on all company accounts.
+- Sensitive documents must never be stored on personal devices.
+
+5. Performance & Availability
+- Employees must be reachable on the company chat during core hours.
+- Managers conduct weekly 1:1s; one per month may be held remotely.
+- Output-based evaluation applies; remote employees are measured on deliverables, not hours logged.
+
+6. Tax & Location
+- Employees working remotely from another state/country for more than 30 days per year must notify HR for payroll and tax compliance.
