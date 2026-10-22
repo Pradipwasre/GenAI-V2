@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Complete LangChain: Interview Notes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Kalam:wght@400;700&display=swap">
+<style>
+:root{--desk:#d8d0bd;--ink:#1c2b5e;--red:#9b1c24;--paper:#f3ead3;--rule:rgba(86,120,160,.4);--margin:rgba(185,60,60,.6);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--desk:#2b2823}}
+:root[data-theme="dark"]{--desk:#2b2823}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;padding:24px 12px;background:var(--desk);color:var(--ink);font-family:'Kalam','Segoe Print','Bradley Hand',cursive;font-size:19px;line-height:32px}
+.sheet{position:relative;max-width:780px;margin:0 auto 28px;padding:64px 28px 32px 88px;background-color:var(--paper);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--rule) 31px,var(--rule) 32px);box-shadow:0 3px 10px rgba(0,0,0,.28),inset 0 0 70px rgba(150,110,50,.2)}
+.sheet::before{content:"";position:absolute;top:0;bottom:0;left:66px;width:3px;border-left:1px solid var(--margin);border-right:1px solid var(--margin)}
+.sheet::after{content:"";position:absolute;top:0;bottom:0;left:0;width:40px;background:radial-gradient(circle,var(--desk) 9px,transparent 10px) 0 0/40px 33.333% repeat-y}
+h1,h2{margin:0;font-family:'Caveat','Segoe Print',cursive;font-weight:700;color:var(--red);line-height:64px}
+h1{font-size:52px}
+h2{font-size:36px;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:8px}
+p,ul,ol,pre{margin:0}
+ul,ol{padding-left:26px}
+ul ul{padding-left:22px}
+li{line-height:32px}
+ul li::marker{content:"\2022  "}
+b{color:#0b1a4a;font-weight:700}
+pre{font-family:inherit;font-size:17px;line-height:32px;white-space:pre-wrap;overflow-x:auto;color:#14466b;border-left:3px solid var(--red);padding-left:12px}
+.q{background:linear-gradient(transparent 5px,rgba(255,222,70,.7) 5px,rgba(255,222,70,.7) 29px,transparent 29px) 0 0/100% 32px repeat-y}
+.sp{height:32px}
+@media (max-width:560px){body{font-size:17px}.sheet{padding:64px 12px 32px 52px}.sheet::before{left:38px}.sheet::after{display:none}h2{font-size:30px}pre{font-size:15px}}
+@media print{body{background:none;padding:0}.sheet{box-shadow:none;margin:0;break-after:page}}
+</style>
+</head>
+<body>
+
+<section class="sheet">
+<h1>Complete LangChain</h1>
+<p>Interview notes for GenAI Engineers</p>
+<div class="sp"></div>
+<ol>
+<li>Document Loaders</li>
+<li>Text Splitters and their types</li>
+<li>Embeddings</li>
+<li>Vectors</li>
+<li>Vector Stores</li>
+<li>Retrievers and how they work</li>
+<li>Context</li>
+<li>Tools</li>
+<li>Agents</li>
+<li>Full pipeline, quick revision</li>
+</ol>
+</section>
+
+<section class="sheet">
+<h2>Q1. What are Document Loaders?</h2>
+<ul>
+<li><b>What:</b> a component that reads data from a source and converts it into <b>Document</b> objects</li>
+<li>A Document has 2 fields: <b>page_content</b> (the text) and <b>metadata</b> (source, page number, etc.)</li>
+<li><b>Why:</b> data sits in PDFs, websites, CSVs, databases; the LLM needs plain text</li>
+<li>Common loaders:
+<ul>
+<li>TextLoader: .txt files</li>
+<li>PyPDFLoader: PDF, one Document per page</li>
+<li>CSVLoader: one row becomes one Document</li>
+<li>WebBaseLoader: web pages</li>
+<li>DirectoryLoader: a whole folder</li>
+</ul></li>
+<li><b>load()</b> gives all docs at once; <b>lazy_load()</b> streams one by one (saves memory)</li>
+<li>Mostly found in langchain_community.document_loaders</li>
+</ul>
+<pre>from langchain_community.document_loaders import PyPDFLoader
+loader = PyPDFLoader("notes.pdf")
+docs = loader.load()
+print(docs[0].metadata)</pre>
+<p class="q">Interview line: Loader = source in, list of Documents out. First step of RAG.</p>
+</section>
+
+<section class="sheet">
+<h2>Q2. What are Text Splitters and their types?</h2>
+<ul>
+<li><b>What:</b> breaks big Documents into small <b>chunks</b></li>
+<li><b>Why:</b> context window is limited; small chunks embed and retrieve more accurately</li>
+<li><b>chunk_size</b> = max size of one chunk</li>
+<li><b>chunk_overlap</b> = text shared between neighbour chunks so meaning is not cut at the edge</li>
+<li>Types:
+<ul>
+<li><b>CharacterTextSplitter:</b> splits on one separator (default is a blank line), simple</li>
+<li><b>RecursiveCharacterTextSplitter:</b> tries blank line, then new line, then space, then single characters until the chunk fits. Best default</li>
+<li><b>TokenTextSplitter:</b> counts tokens, not characters</li>
+<li><b>MarkdownHeaderTextSplitter / HTMLHeaderTextSplitter:</b> split by headings, heading is kept in metadata</li>
+<li><b>Code splitter:</b> RecursiveCharacterTextSplitter.from_language(...)</li>
+<li><b>SemanticChunker:</b> splits where the meaning changes, uses embeddings (langchain_experimental)</li>
+</ul></li>
+<li>Starting point: chunk_size 500 to 1000, overlap about 10 to 20 percent</li>
+</ul>
+<pre>from langchain_text_splitters import RecursiveCharacterTextSplitter
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=800, chunk_overlap=100)
+chunks = splitter.split_documents(docs)</pre>
+<p class="q">Interview line: Too big = noisy. Too small = loses context. Tune by testing.</p>
+</section>
+
+<section class="sheet">
+<h2>Q3. What is Embedding?</h2>
+<ul>
+<li><b>What:</b> converting text into a list of numbers (a vector) that captures its <b>meaning</b></li>
+<li>Similar meaning = vectors close together, e.g. car and automobile</li>
+<li>Models: OpenAIEmbeddings, HuggingFaceEmbeddings, GoogleGenerativeAIEmbeddings, OllamaEmbeddings</li>
+<li><b>embed_query(text):</b> one query</li>
+<li><b>embed_documents(list):</b> many chunks</li>
+<li>Use the <b>same model</b> for storing chunks and for the user query</li>
+<li>Size is fixed per model, e.g. text-embedding-3-small gives 1536 numbers by default</li>
+</ul>
+<pre>from langchain_openai import OpenAIEmbeddings
+emb = OpenAIEmbeddings(model="text-embedding-3-small")
+vec = emb.embed_query("What is RAG?")
+print(len(vec))  # 1536</pre>
+<p class="q">Interview line: Embeddings let us search by meaning, not by exact keywords.</p>
+</section>
+
+<section class="sheet">
+<h2>Q4. What are Vectors?</h2>
+<ul>
+<li><b>Vector:</b> an ordered list of numbers, e.g. [0.12, -0.8, 0.45, ...]</li>
+<li>Each vector is a <b>point in high dimensional space</b> (hundreds or thousands of dimensions)</li>
+<li>Closer points = more similar text</li>
+<li>How closeness is measured:
+<ul>
+<li><b>Cosine similarity:</b> angle between 2 vectors, range -1 to 1, most used</li>
+<li><b>Dot product:</b> fast, same as cosine when vectors are normalized</li>
+<li><b>Euclidean (L2) distance:</b> straight line distance, smaller = closer</li>
+</ul></li>
+<li>More dimensions hold more detail but cost more storage and time</li>
+</ul>
+<p class="q">Interview line: Vector = coordinates of meaning. Search = find vectors nearest to the query vector.</p>
+</section>
+
+<section class="sheet">
+<h2>Q5. What is a Vector Store?</h2>
+<ul>
+<li><b>What:</b> a database that stores <b>embeddings + original text + metadata</b> and finds similar vectors fast</li>
+<li>Uses <b>ANN</b> (approximate nearest neighbour) indexes like HNSW or IVF, so it does not compare with every vector</li>
+<li>Examples:
+<ul>
+<li>FAISS: local library</li>
+<li>Chroma: local, easy to start</li>
+<li>Pinecone: managed cloud</li>
+<li>Qdrant, Weaviate, Milvus</li>
+<li>pgvector: inside Postgres</li>
+</ul></li>
+<li>Main methods: from_documents(), add_documents(), similarity_search(query, k), similarity_search_with_score(), as_retriever()</li>
+<li>Flow: Docs -&gt; chunks -&gt; embeddings -&gt; store</li>
+</ul>
+<pre>from langchain_community.vectorstores import FAISS
+db = FAISS.from_documents(chunks, emb)
+res = db.similarity_search("What is RAG?", k=3)</pre>
+<p class="q">Interview line: Vector store = storage + similarity search. Retriever sits on top.</p>
+</section>
+
+<section class="sheet">
+<h2>Q6. What are Retrievers and how do they work?</h2>
+<ul>
+<li><b>What:</b> an interface that takes a text query and returns a list of relevant Documents</li>
+<li>It only <b>retrieves</b>; it does not have to store. Backend can be a vector store, BM25 keyword index, or an API</li>
+<li>It is a Runnable: use .invoke(query) and chain it with |</li>
+<li><b>How it works (vector retriever):</b>
+<ul>
+<li>query -&gt; embed the query</li>
+<li>search the vector store</li>
+<li>take top k nearest chunks</li>
+<li>return them as Documents</li>
+</ul></li>
+<li>search_type: <b>similarity</b> (default), <b>mmr</b> (relevance + diversity), <b>similarity_score_threshold</b> (minimum score)</li>
+<li>Types:
+<ul>
+<li><b>MultiQueryRetriever:</b> LLM writes several versions of the query</li>
+<li><b>ContextualCompressionRetriever:</b> trims irrelevant text</li>
+<li><b>BM25Retriever:</b> keyword based</li>
+<li><b>EnsembleRetriever:</b> hybrid, keyword + vector</li>
+<li><b>ParentDocumentRetriever:</b> search small chunks, return the big parent</li>
+<li><b>SelfQueryRetriever:</b> LLM builds metadata filters</li>
+</ul></li>
+</ul>
+<pre>retriever = db.as_retriever(
+    search_type="mmr", search_kwargs={"k": 4})
+docs = retriever.invoke("What is RAG?")</pre>
+<p class="q">Interview line: Retriever = query in, relevant Documents out. Vector store is just one backend.</p>
+</section>
+
+<section class="sheet">
+<h2>Q7. What is Context?</h2>
+<ul>
+<li><b>Context</b> = everything the LLM sees in one call: system instructions, chat history, user question, retrieved chunks, tool results</li>
+<li>In RAG: retrieved chunks pasted into the prompt are the context, the model answers from them</li>
+<li><b>Context window:</b> max tokens a model can handle in one call (input + output)</li>
+<li>Too much context = costly, slow, details in the middle can be missed</li>
+<li>Too little context = wrong or hallucinated answer</li>
+<li><b>Context engineering:</b> deciding what goes in, in what order, how much (top k, summarize old chat, trim)</li>
+<li>In LangChain agents, <b>runtime context</b> (user id, db connection, settings) is passed separately and tools can read it</li>
+</ul>
+<pre>from langchain_core.prompts import ChatPromptTemplate
+prompt = ChatPromptTemplate.from_template(
+    "Answer using only this context:\n{context}\n\n"
+    "Question: {question}")</pre>
+<p class="q">Interview line: Context is what the model sees. Better context = better answer.</p>
+</section>
+
+<section class="sheet">
+<h2>Q8. Explain Tools</h2>
+<ul>
+<li><b>What:</b> functions a model can ask to run: web search, calculator, API call, database query, send email</li>
+<li>The model does <b>not</b> run the tool. It returns a <b>tool call</b> (name + arguments), our code runs it and sends the result back</li>
+<li>A tool has a <b>name</b>, a <b>description</b> (model reads this to choose) and an <b>args schema</b></li>
+<li>Create with the @tool decorator: docstring = description, type hints = schema</li>
+<li>Attach to a model: llm.bind_tools([tool1, tool2])</li>
+<li>Flow: question -&gt; model returns tool call -&gt; tool runs -&gt; ToolMessage with result -&gt; model writes final answer</li>
+</ul>
+<pre>from langchain.tools import tool
+
+@tool
+def add(a: int, b: int) -> int:
+    """Add two numbers."""
+    return a + b</pre>
+<p class="q">Interview line: Tool = function + clear description + typed arguments. Bad description = wrong tool chosen.</p>
+</section>
+
+<section class="sheet">
+<h2>Q9. What are Agents in LangChain?</h2>
+<ul>
+<li><b>What:</b> an LLM that <b>decides</b> which tools to call and in what order, in a loop, until the task is done</li>
+<li><b>Chain vs Agent:</b> chain = fixed steps we write; agent = steps chosen by the model at run time</li>
+<li>Loop (ReAct idea): think -&gt; act (call tool) -&gt; observe -&gt; repeat -&gt; final answer</li>
+<li>Parts: model, tools, system prompt, memory (checkpointer)</li>
+<li>LangChain 1.0: <b>create_agent</b> builds the agent, running on top of <b>LangGraph</b></li>
+<li><b>Middleware</b> hooks customize the loop: summarize history, human approval, guardrails</li>
+<li>Older style: AgentExecutor, create_react_agent (legacy)</li>
+<li>Risks: endless loops, wrong tool, high cost. Set a step limit (recursion_limit), write clear tool descriptions</li>
+</ul>
+<pre>from langchain.agents import create_agent
+agent = create_agent(
+    model="openai:gpt-4o",
+    tools=[add],
+    system_prompt="You are a math helper.")
+out = agent.invoke({"messages": [
+    {"role": "user", "content": "What is 2 + 3?"}]})</pre>
+<p class="q">Interview line: Agent = LLM + tools + loop. The model controls the flow.</p>
+</section>
+
+<section class="sheet">
+<h2>Full pipeline, quick revision</h2>
+<ul>
+<li>Loader -&gt; Splitter -&gt; Embeddings -&gt; Vector Store -&gt; Retriever -&gt; Prompt (context) -&gt; LLM -&gt; Answer</li>
+<li><b>Loader:</b> reads data into Documents</li>
+<li><b>Splitter:</b> makes chunks (size + overlap)</li>
+<li><b>Embeddings:</b> chunk to vector</li>
+<li><b>Vector Store:</b> stores vectors, similarity search</li>
+<li><b>Retriever:</b> query to top k Documents</li>
+<li><b>Context:</b> retrieved text placed in the prompt</li>
+<li><b>Tools:</b> functions the model can call</li>
+<li><b>Agent:</b> model + tools in a loop, retriever can be one of its tools</li>
+</ul>
+<p class="q">Interview line: RAG gives knowledge, tools give actions, agents give decisions.</p>
+</section>
+
+</body>
+</html>
