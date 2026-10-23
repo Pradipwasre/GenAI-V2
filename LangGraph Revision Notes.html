@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LangGraph Revision Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#184B2E;--chalk:#f7f3e3;--ink:#ffffff;--hl:#ffe58a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background-color:var(--bg);
+background-image:radial-gradient(circle,rgba(255,255,255,.8) .6px,transparent 1px);
+background-size:18px 18px;background-position:0 0;
+color:var(--ink);font-family:'Kalam','Comic Sans MS',cursive;font-size:19px;line-height:1.6}
+main{max-width:860px;margin:0 auto;padding:28px 18px 70px}
+h1,h2,h3{font-family:'Caveat Brush','Segoe Print','Comic Sans MS',cursive;color:var(--chalk);font-weight:400;filter:url(#chalk);text-shadow:0 0 4px rgba(255,255,255,.3);margin:0}
+h1{font-size:3.2rem;line-height:1.1;margin-bottom:6px}
+h2{font-size:2.5rem;margin:58px 0 8px;border-bottom:3px dashed rgba(247,243,227,.45);padding-bottom:4px}
+h3{font-size:1.9rem;margin:44px 0 6px}
+p{margin:6px 0}
+ul{margin:4px 0 10px;padding-left:24px}
+li{margin:3px 0}
+li::marker{color:var(--hl)}
+b{color:var(--hl);font-weight:700}
+code{font-family:'Kalam',monospace;background:rgba(255,255,255,.12);padding:0 6px;border-radius:4px}
+.box{border:2px dashed rgba(247,243,227,.5);border-radius:10px;padding:8px 16px;margin:12px 0;background:rgba(0,0,0,.12)}
+.ex{border-left:4px solid var(--hl);padding-left:14px;margin:12px 0}
+svg.dg{width:100%;height:auto;display:block;margin:14px 0;border:2px solid rgba(247,243,227,.35);border-radius:10px;background:rgba(0,0,0,.14)}
+.sc{overflow-x:auto}
+table{border-collapse:collapse;min-width:640px;width:100%}
+th,td{border:1.5px solid rgba(247,243,227,.45);padding:6px 10px;text-align:left;vertical-align:top;font-size:17px}
+th{font-family:'Caveat Brush',cursive;font-weight:400;font-size:1.4rem;color:var(--chalk)}
+.sub{color:rgba(255,255,255,.8);margin:0 0 6px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="chalk"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2"/></filter></svg>
+<main>
+
+<h1>LangGraph Revision Notes</h1>
+<p class="sub">Agents, Memory, and 6 types of RAG. Simple English, interview ready.</p>
+
+<h2>1. What is an Agent?</h2>
+<p><b>Simple definition:</b> An agent is an LLM that decides what to do next, uses tools, and keeps looping until the task is finished.</p>
+<ul>
+<li><b>Chain:</b> steps are fixed by the developer. <b>Agent:</b> the LLM chooses the steps.</li>
+<li><b>The loop (ReAct = Reason + Act):</b> Think, then Act (call a tool), then Observe (read the result), then repeat. Stop when it can give the final answer.</li>
+<li><b>4 parts of an agent:</b> LLM (brain), Tools (search, SQL, API, calculator), Memory (what happened so far), Instructions (system prompt).</li>
+</ul>
+<p><b>In LangGraph an agent is a graph with a loop:</b></p>
+<ul>
+<li><b>State:</b> shared data passed between steps (usually the list of messages).</li>
+<li><b>Node:</b> a function that does work (agent node calls the LLM, tools node runs tools).</li>
+<li><b>Edge:</b> a fixed arrow from one node to the next.</li>
+<li><b>Conditional edge:</b> picks the next node by checking the state. Example: tool calls present, go to tools. No tool calls, go to END.</li>
+<li><b>Shortcut:</b> <code>create_react_agent</code> builds this whole loop for you.</li>
+</ul>
+<svg id="d1" class="dg" role="img" aria-label="Agent loop diagram"></svg>
+<div class="ex"><b>Example:</b> User asks “Weather in Pune today? Do I need an umbrella?”
+<ul>
+<li>LLM thinks: I need live data, so it calls the weather tool.</li>
+<li>Tool returns: 80 percent chance of rain.</li>
+<li>LLM reads the result and answers: “Yes, carry an umbrella.”</li>
+</ul></div>
+<p><b>Works well when:</b> the steps are not known in advance (research, support bots, data lookups with several tools).</p>
+<p><b>Avoid when:</b> the steps are always the same. Use a simple chain or workflow, it is cheaper and more predictable.</p>
+<div class="box"><b>Interview answer:</b> “An agent is an LLM in a loop with tools. It reasons, calls a tool, reads the result, and repeats until done. In LangGraph I model it as a graph with an agent node, a tools node, and a conditional edge that decides to continue or stop.”</div>
+
+<h2>2. Memory in LangGraph</h2>
+<p>LLMs forget everything between calls. LangGraph gives two kinds of memory.</p>
+<h3>Short-term memory (Checkpointer)</h3>
+<ul>
+<li>Remembers the <b>state of one conversation (thread)</b>.</li>
+<li>Saved automatically after every step as a <b>checkpoint</b>.</li>
+<li>Identified by <code>thread_id</code> passed in config: <code>{"configurable": {"thread_id": "1"}}</code>.</li>
+<li>Savers: <code>InMemorySaver</code> (testing), <code>SqliteSaver</code>, <code>PostgresSaver</code> (production).</li>
+<li>Bonus powers: resume after a crash, human-in-the-loop pause, time travel to an old checkpoint.</li>
+</ul>
+<h3>Long-term memory (Store)</h3>
+<ul>
+<li>Remembers facts <b>across threads and sessions</b>.</li>
+<li>Data is saved as JSON under a <b>namespace</b> (like a folder, e.g. <code>(user_id, "memories")</code>) and a <b>key</b>.</li>
+<li>Methods: <code>put</code>, <code>get</code>, <code>search</code>. Examples: <code>InMemoryStore</code>, Postgres store.</li>
+<li>Connect both: <code>graph.compile(checkpointer=..., store=...)</code>.</li>
+</ul>
+<svg id="d2" class="dg" role="img" aria-label="Memory structure diagram"></svg>
+<p><b>3 kinds of long-term memory:</b></p>
+<ul>
+<li><b>Semantic:</b> facts (name, city, preferences).</li>
+<li><b>Episodic:</b> past experiences (what worked last time).</li>
+<li><b>Procedural:</b> rules and instructions (how the agent should behave).</li>
+</ul>
+<p><b>Long chat problem:</b> the message list grows and exceeds the context window. Fix by trimming old messages, summarizing them, or deleting them (<code>RemoveMessage</code>). The state field uses a <b>reducer</b> like <code>add_messages</code> so new messages are appended, not overwritten.</p>
+<div class="ex"><b>Example:</b> In thread 1 the user says “My name is Pradip”. Later in thread 1 the bot remembers (checkpointer). In a new thread 2 it does not, unless the name was saved in the Store under that user’s namespace.</div>
+<p><b>Works well when:</b> Checkpointer for chat history, approvals, and recovery. Store for user profile, preferences, and learned facts.</p>
+<div class="box"><b>Interview answer:</b> “Checkpointer is short-term memory, scoped to one thread_id. Store is long-term memory, shared across threads, organized by namespace and key.”</div>
+
+<h2>3. Types of RAG</h2>
+<p><b>Normal RAG:</b> question, retrieve top chunks from a vector DB, LLM answers from them. It is one shot and cannot fix bad retrieval. Each type below solves a specific weakness.</p>
+
+<h3>A. Agentic RAG</h3>
+<ul>
+<li>An agent <b>decides</b> whether to retrieve, which source to use, rewrites the query, checks the results, and retries if they are poor.</li>
+<li>Retriever is just a <b>tool</b> the agent can call.</li>
+</ul>
+<svg id="d3" class="dg" role="img" aria-label="Agentic RAG diagram"></svg>
+<div class="ex"><b>Example:</b> HR bot gets “Leave rules for contract staff in Pune?” Agent searches, sees only general policy, rewrites the query with “contract” and “India”, searches again, then answers.</div>
+<p><b>Works well when:</b> questions are vague or need several tries, or there are many sources.</p>
+<p><b>Avoid when:</b> simple FAQ. Extra LLM calls add cost and delay.</p>
+
+<h3>B. Multi-Agent RAG</h3>
+<ul>
+<li>Several <b>specialist agents</b>, each with its own tools and data source, coordinated by a <b>supervisor</b>. A writer agent combines the outputs.</li>
+</ul>
+<svg id="d4" class="dg" role="img" aria-label="Multi-agent RAG diagram"></svg>
+<div class="ex"><b>Example:</b> “Compare our Q3 sales with competitor news.” SQL agent gets sales numbers, Web agent gets news, Docs agent gets internal strategy notes. Writer agent builds one report.</div>
+<p><b>Works well when:</b> the answer needs different kinds of data (SQL, PDFs, web) and each needs its own skill.</p>
+<p><b>Avoid when:</b> one source is enough. More agents means more cost and harder debugging.</p>
+
+<h3>C. Autonomous RAG</h3>
+<ul>
+<li>Agentic RAG with <b>more freedom</b>: the system makes a plan, breaks it into sub-goals, retrieves again and again, reflects on whether it has enough, saves notes in memory, and stops by itself.</li>
+<li>Think “deep research” mode. The term is used loosely in industry, so state your definition in the interview.</li>
+</ul>
+<svg id="d5" class="dg" role="img" aria-label="Autonomous RAG diagram"></svg>
+<div class="ex"><b>Example:</b> “Write a market report on EV batteries in India.” System plans 5 sub-questions, researches each, notices a gap in pricing data, researches again, then writes the report.</div>
+<p><b>Works well when:</b> open-ended, long tasks with no fixed path.</p>
+<p><b>Avoid when:</b> you need predictable cost, speed, or strict control. Add step limits and human approval.</p>
+
+<h3>D. Cache RAG</h3>
+<p>Two meanings, know both:</p>
+<ul>
+<li><b>CAG (Cache-Augmented Generation):</b> load the whole knowledge base into the LLM context once and reuse its KV cache. <b>No retrieval step</b> at question time.</li>
+<li><b>Semantic cache:</b> store past question and answer pairs. If a new question is similar, return the saved answer without calling the LLM.</li>
+</ul>
+<svg id="d6" class="dg" role="img" aria-label="Cache RAG diagram"></svg>
+<div class="ex"><b>Example:</b> (A) A 40-page product manual fits in the context, so the support bot preloads it. (B) Many users ask “How do I reset my password?”, so the saved answer is returned instantly.</div>
+<p><b>Works well when:</b> CAG for small, stable knowledge. Semantic cache for repeated questions.</p>
+<p><b>Avoid when:</b> CAG with a large or fast-changing knowledge base. Semantic cache when answers go stale quickly.</p>
+
+<h3>E. Adaptive RAG</h3>
+<ul>
+<li>A <b>router</b> checks how hard the question is, then picks the cheapest strategy that works: no retrieval, single retrieval, or multi-step retrieval.</li>
+</ul>
+<svg id="d7" class="dg" role="img" aria-label="Adaptive RAG diagram"></svg>
+<div class="ex"><b>Example:</b> “Hello” goes straight to the LLM. “What is the refund policy?” does one retrieval. “How did the refund policy change over the last 3 years and why?” runs a multi-step loop.</div>
+<p><b>Works well when:</b> traffic mixes easy and hard questions and you want to save cost and time.</p>
+<p><b>Avoid when:</b> all questions are similar. The router adds its own cost and can misjudge.</p>
+
+<h3>F. VectorLess RAG</h3>
+<ul>
+<li>Retrieval <b>without embeddings or a vector DB</b>. Uses keyword search (BM25), SQL, knowledge graphs, or a <b>tree index</b> of a document where the LLM reads section titles and summaries and walks to the right section (for example PageIndex).</li>
+</ul>
+<svg id="d8" class="dg" role="img" aria-label="VectorLess RAG diagram"></svg>
+<div class="ex"><b>Example:</b> Question on a 200-page annual report: “What is the liquidity risk?” LLM opens Finance, then Liquidity, reads only that section, and answers. No chunking or embedding needed.</div>
+<p><b>Works well when:</b> long structured documents (reports, legal, manuals), exact terms matter, you want explainable retrieval, or you want no embedding cost.</p>
+<p><b>Avoid when:</b> huge messy collections of unrelated documents, or when meaning-based search is needed (“similar idea, different words”).</p>
+
+<h2>Quick Comparison</h2>
+<div class="sc"><table>
+<tr><th>Type</th><th>Core idea</th><th>Best for</th></tr>
+<tr><td>Agentic</td><td>Agent decides, retries, uses retriever as a tool</td><td>Vague questions, many sources</td></tr>
+<tr><td>Multi-Agent</td><td>Specialist agents plus a supervisor</td><td>Mixed data (SQL, docs, web)</td></tr>
+<tr><td>Autonomous</td><td>Plans, loops, reflects, stops itself</td><td>Deep research tasks</td></tr>
+<tr><td>Cache</td><td>Preload context (CAG) or reuse past answers</td><td>Small stable data, repeated questions</td></tr>
+<tr><td>Adaptive</td><td>Router picks strategy by difficulty</td><td>Mixed easy and hard traffic</td></tr>
+<tr><td>VectorLess</td><td>No embeddings, tree, keyword, or SQL retrieval</td><td>Long structured documents</td></tr>
+</table></div>
+
+<h2>Last-minute Interview Lines</h2>
+<ul>
+<li><b>Agent vs chain:</b> chain has fixed steps, agent chooses steps.</li>
+<li><b>Checkpointer vs Store:</b> per-thread short-term vs cross-thread long-term.</li>
+<li><b>Agentic vs Multi-Agent:</b> one agent with tools vs many specialist agents.</li>
+<li><b>Agentic vs Autonomous:</b> Autonomous has more planning, reflection, and self-control.</li>
+<li><b>Adaptive vs Agentic:</b> Adaptive routes by question difficulty. Agentic reasons and loops inside a question.</li>
+<li><b>Why VectorLess:</b> avoids chunking loss and embedding cost on structured documents.</li>
+<li><b>Always mention:</b> trade-off between answer quality, cost, and latency.</li>
+</ul>
+
+</main>
+<script>
+function dg(id,H,nodes,edges,caps){
+var s=document.getElementById(id),N={},h='',C='#f7f3e3';
+s.setAttribute('viewBox','0 0 600 '+H);
+h+='<defs><marker id="m'+id+'" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="'+C+'"/></marker></defs><g filter="url(#chalk)">';
+nodes.forEach(function(n){var L=n[4].split('\n');N[n[0]]={x:n[1],y:n[2],w:n[3],h:14+17*L.length,L:L,c:n[5]}});
+edges.forEach(function(e){
+var A=N[e[0]],B=N[e[1]],k=e[3]||0,dx=B.x-A.x,dy=B.y-A.y,L=Math.hypot(dx,dy);
+var tA=Math.min(A.w/2/(Math.abs(dx)||1e-9),A.h/2/(Math.abs(dy)||1e-9))+5/L;
+var tB=Math.min(B.w/2/(Math.abs(dx)||1e-9),B.h/2/(Math.abs(dy)||1e-9))+8/L;
+var x1=A.x+dx*tA,y1=A.y+dy*tA,x2=B.x-dx*tB,y2=B.y-dy*tB;
+var px=-dy/L*2*k,py=dx/L*2*k,cx=(x1+x2)/2+px,cy=(y1+y2)/2+py;
+h+='<path d="M'+x1+' '+y1+'Q'+cx+' '+cy+' '+x2+' '+y2+'" fill="none" stroke="'+C+'" stroke-width="2" stroke-linecap="round" marker-end="url(#m'+id+')"/>';
+e._l=[.25*x1+.5*cx+.25*x2,.25*y1+.5*cy+.25*y2];
+});
+Object.keys(N).forEach(function(k){var n=N[k],st=n.c==='y'?'#ffe58a':C;
+h+='<rect x="'+(n.x-n.w/2)+'" y="'+(n.y-n.h/2)+'" width="'+n.w+'" height="'+n.h+'" rx="7" fill="rgba(255,255,255,.07)" stroke="'+st+'" stroke-width="2"/>'});
+h+='</g>';
+Object.keys(N).forEach(function(k){var n=N[k];
+h+='<text text-anchor="middle" font-family="Kalam,cursive" font-size="14" fill="#fff">';
+n.L.forEach(function(t,i){h+='<tspan x="'+n.x+'" y="'+(n.y-n.h/2+22+i*17-2)+'">'+t+'</tspan>'});h+='</text>'});
+var lt=function(x,y,t,c){return '<text x="'+x+'" y="'+y+'" text-anchor="middle" font-family="Kalam,cursive" font-size="13" fill="'+c+'" stroke="#184B2E" stroke-width="4" paint-order="stroke">'+t+'</text>'};
+edges.forEach(function(e){if(e[2])h+=lt(e._l[0],e._l[1]+4,e[2],'#ffe58a')});
+(caps||[]).forEach(function(c){h+='<text x="'+c[0]+'" y="'+c[1]+'" font-family="Caveat Brush,cursive" font-size="21" fill="'+C+'">'+c[2]+'</text>'});
+s.innerHTML=h;}
+
+dg('d1',300,[['s',70,150,80,'START'],['a',235,150,140,'Agent node\nLLM thinks','y'],['t',470,55,140,'Tools node\nruns the tool'],['e',470,245,80,'END']],
+[['s','a'],['a','t','needs a tool',22],['t','a','tool result',22],['a','e','final answer']]);
+
+dg('d2',320,[['t1',80,70,110,'Thread 1\nchat A'],['t2',80,250,110,'Thread 2\nchat B'],['g',265,160,120,'LangGraph\napp','y'],['c',495,70,160,'Checkpointer\nshort-term\nper thread_id'],['st',495,250,160,'Store\nlong-term\nnamespace + key']],
+[['t1','g'],['t2','g'],['g','c','save state'],['g','st','put / get / search']]);
+
+dg('d3',300,[['q',55,150,80,'Question'],['a',205,150,110,'Agent\ndecides','y'],['r',385,60,120,'Retriever\ntool'],['g',385,240,120,'Grade\nresults'],['n',545,150,80,'Answer']],
+[['q','a'],['a','r','search'],['r','g'],['g','a','poor: rewrite',-30],['g','n','good'],['a','n','no search needed']]);
+
+dg('d4',320,[['q',50,160,76,'Question'],['s',175,160,110,'Supervisor\nrouter','y'],['a1',335,60,110,'Docs agent'],['a2',335,160,110,'SQL agent'],['a3',335,260,110,'Web agent'],['w',510,160,120,'Writer agent\nfinal answer']],
+[['q','s'],['s','a1'],['s','a2'],['s','a3'],['a1','w'],['a2','w'],['a3','w']]);
+
+dg('d5',300,[['g',50,150,70,'Goal'],['p',180,150,100,'Plan\nsub-goals','y'],['r',360,60,120,'Retrieve\n+ tools'],['f',360,240,120,'Reflect\nenough?'],['m',535,60,100,'Memory\nnotes'],['d',535,240,100,'Final\nreport']],
+[['g','p'],['p','r'],['r','f'],['f','p','not enough: re-plan',-35],['r','m','save'],['f','d','yes, stop']]);
+
+dg('d6',320,[['d',95,70,130,'Knowledge\npreloaded once'],['k',295,70,130,'LLM context\n(KV cache)','y'],['an',480,70,90,'Answer'],
+['q',60,235,80,'Question'],['c',190,235,90,'Cache\nsimilar?','y'],['h',360,190,110,'Cached\nanswer'],['r',360,275,110,'Normal RAG'],['sv',525,275,90,'Save in\ncache']],
+[['d','k'],['k','an'],['q','c'],['c','h','hit'],['c','r','miss'],['r','sv']],
+[[10,24,'A) CAG: no retrieval step'],[10,142,'B) Semantic cache']]);
+
+dg('d7',300,[['q',50,150,76,'Question'],['r',175,150,110,'Router\ndifficulty?','y'],['p1',350,50,140,'Easy: LLM only'],['p2',350,150,140,'Medium:\none retrieval'],['p3',350,250,140,'Hard: multi-step\nretrieval loop'],['an',530,150,80,'Answer']],
+[['q','r'],['r','p1'],['r','p2'],['r','p3'],['p1','an'],['p2','an'],['p3','an']]);
+
+dg('d8',300,[['r',115,45,120,'Annual Report'],['c1',45,135,76,'Business'],['c2',130,135,70,'Risks'],['c3',220,135,76,'Finance','y'],['s1',185,230,84,'Liquidity','y'],['s2',285,230,70,'Debt'],
+['q',455,45,100,'Question'],['l',455,135,130,'LLM walks tree,\npicks best branch'],['a',455,235,130,'Answer from\nthat section']],
+[['r','c1'],['r','c2'],['r','c3'],['c3','s1'],['c3','s2'],['q','l'],['l','c3','go here',-12],['l','a'],['s1','a','read text']]);
+</script>
+</body>
+</html>
